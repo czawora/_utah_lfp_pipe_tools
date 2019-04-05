@@ -4,14 +4,10 @@ import glob
 import time
 import argparse
 import math
-import re
 
 #########################################################################
 #########################################################################
 #########################################################################
-
-datestring_regex_old = re.compile(r'.*(\d\d\d\d\d\d_\d\d\d\d).*')
-datestring_regex_new = re.compile(r'.*(\d\d\d\d\d\d\d\d-\d\d\d\d\d\d).*')
 
 abspath = os.path.abspath(__file__)
 dname = os.path.dirname(abspath)
