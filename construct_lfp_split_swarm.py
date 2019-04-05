@@ -11,7 +11,7 @@ if os.path.isfile(dname + "/paths.py") is False:
     print("move a copy of paths.py into this folder: " + dname)
     exit(2)
 
-from paths import *
+import paths
 
 # check for correct amount of inputs
 if len(sys.argv) < 3:
@@ -29,7 +29,7 @@ filt_chan_substr = "filt"
 bash_file = "split_big_bash.sh"
 swarm_file = "split_swarm.sh"
 
-matlab_command = "cd " + filter_matlab_dir + "/_filter_downsample_detrend_rmLineNoise; ./run_filter_downsample_detrend_rmLineNoise_swarm.sh " + matlab_compiler_ver_str
+matlab_command = "cd " + paths.filter_matlab_dir + "/_filter_downsample_detrend_rmLineNoise; ./run_filter_downsample_detrend_rmLineNoise_swarm.sh " + paths.matlab_compiler_ver_str
 
 # set parent directory
 split_path_parent_dir = split_path + "/.."
