@@ -19,381 +19,363 @@ dname = os.path.dirname(abspath)
 sys.path.append(dname)
 
 if os.path.isfile(dname + "/paths.py") is False:
-    print("move a copy of paths.py into this folder: " + dname)
-    exit(2)
+	print("move a copy of paths.py into this folder: " + dname)
+	exit(2)
 
-from paths import *
-
-
-bash_fname = "lfp_run_all.sh"
-bash_log_fname = "_lfp_run_all.log"
-
-big_bash_fname = "lfp_initial_big_bash.sh"
-swarm_fname = "lfp_initial_swarm.sh"
-
-target_num_bundle_groups = 15
-swarm_command = "swarm -g 200 -b %s -t 1 --time 2:00:00 --gres=lscratch:1 --merge-output --logdir "
+import paths
 
 #########################################################################
-#########################################################################
+# START FUNCTIONS #######################################################
 #########################################################################
 
 
-parser = argparse.ArgumentParser(description='create bash files for spike sorting and lfp extraction')
+def write_splitLFP(session_dir, nsx_fpath):
 
-parser.add_argument('subj_path')
+	sub_cmd_fname = "splitLFP.sh"
+	sub_cmd_log_fname = "_splitLFP.log"
+	sub_cmd_fpath = session_dir + "/" + sub_cmd_fname
+	sub_cmd_file = open(sub_cmd_fpath, 'w')
 
-args = parser.parse_args()
+	# write the sbatch header for sub_cmd bash file
+	sbatch_header = []
+	sbatch_header.append("#!/bin/bash")
+	sbatch_header.append("#SBATCH --mem=120g")
+	sbatch_header.append("#SBATCH --cpus-per-task=1")
+	sbatch_header.append("#SBATCH --error=" + session_dir + "/" + sub_cmd_log_fname)
+	sbatch_header.append("#SBATCH --output=" + session_dir + "/" + sub_cmd_log_fname)
+	sbatch_header.append("#SBATCH --gres=lscratch:15")
 
-subj_path = args.subj_path
+	for l in sbatch_header:
+		sub_cmd_file.write(l + "\n")
 
-timestamp = time.strftime("%d_%m_%Y--%H_%M_%S")
+	sub_cmd_file.write("\n\n")
 
-# make subj_path/run_files if it doesnt exist, bash scripts go in there
-swarm_files_path = subj_path + "/_swarms"
+	sub_cmd_file.write("echo \"start splitLFP\"\n")
 
-if os.path.isdir(swarm_files_path) is False:
-    os.mkdir(swarm_files_path)
-    os.mkdir(swarm_files_path + "/log_dump")
+	sub_cmd_file.write("tar -C /lscratch/$SLURM_JOB_ID -xf /usr/local/matlab-compiler/v94.tar.gz;")
 
-swarm_command += swarm_files_path + "/log_dump"
-swarm_command += " -f "
+	matlab_command = "cd " + paths.splitLFP_matlab_dir + "/_splitLFP; ./run_splitLFP_swarm.sh " + paths.matlab_compiler_ver_str
 
+	sub_cmd = []
+	sub_cmd.append(matlab_command)
+	sub_cmd.append("nsx_fpath")
+	sub_cmd.append(nsx_fpath)
+	sub_cmd.append("save_dir")
+	sub_cmd.append(session_dir)
+	sub_cmd.append("&> " + session_dir + "/" + sub_cmd_log_fname)
 
-subj_path_files = os.listdir(subj_path)
+	sub_cmd_file.write(" ".join(sub_cmd) + "\n")
 
-bundle_size = math.ceil(len(subj_path_files) / target_num_bundle_groups)
-swarm_command = swarm_command % str(bundle_size)
+	sub_cmd_file.write("echo \"end splitLFP\"\n")
 
-# write sort swarm file
-swarm_file = open(swarm_files_path + "/" + swarm_fname, 'w')
-swarm_file.write(swarm_command + " " + swarm_files_path + "/" + big_bash_fname)
-swarm_file.close()
+	sub_cmd_file.close()
 
-# write sort sort big bash file
-big_bash_file = open(swarm_files_path + "/" + big_bash_fname, 'w')
+	return(sub_cmd_fpath)
 
 
-for sess in subj_path_files:
+def write_process_split_channels(session_dir, job_name):
 
-    print(sess)
-    # if the sess is raw blackrock file string, need to change it
-    if re.match(datestring_regex_new, sess) is not None:
+	sub_cmd_fname = "process_split_channels.sh"
+	sub_cmd_log_fname = "_process_split_channels.log"
+	sub_cmd_fpath = session_dir + "/" + sub_cmd_fname
+	sub_cmd_file = open(sub_cmd_fpath, 'w')
 
-        datestring_match = re.findall(datestring_regex_new, sess)[0]
-        print("found datestring match: " + datestring_match)
-        datestring_match_splitter = datestring_match
-        print("split on datestring match: " + str(sess.split(datestring_match_splitter)))
+	# write the sbatch header for sub_cmd bash file
+	sbatch_header = []
+	sbatch_header.append("#!/bin/bash")
+	sbatch_header.append("#SBATCH --mem=5g")
+	sbatch_header.append("#SBATCH --cpus-per-task=1")
+	sbatch_header.append("#SBATCH --error=" + session_dir + "/" + sub_cmd_log_fname)
+	sbatch_header.append("#SBATCH --output=" + session_dir + "/" + sub_cmd_log_fname)
+	sbatch_header.append("#SBATCH --gres=lscratch:1")
 
-        output_subj_str = sess.split(datestring_match_splitter)[0].strip("_")
-        output_ymd_hms_str = datestring_match[2:len(datestring_match)-2].replace('-', "_")
-        output_nsp_str = sess.split(datestring_match_splitter)[1]
+	for l in sbatch_header:
+		sub_cmd_file.write(l + "\n")
 
-        if output_nsp_str[0] == "-":
-            output_nsp_str = output_nsp_str[1:]
+	sub_cmd_file.write("\n\n")
 
-    elif re.match(datestring_regex_old, sess) is not None:
+	sub_cmd_file.write("echo \"start process_split_channels\"\n")
 
-        datestring_match = re.findall(datestring_regex_old, sess)[0]
-        print("found datestring match: " + datestring_match)
-        datestring_match_splitter = datestring_match
-        print("split on datestring match: " + str(sess.split(datestring_match_splitter)))
+	sub_cmd = []
+	sub_cmd.append("python3")
+	sub_cmd.append(paths.lfp_pipeline_dir + "/construct_lfp_split_swarm.py")
+	sub_cmd.append(session_dir + "/lfp_splits")
+	sub_cmd.append(job_name)
+	sub_cmd.append("&> " + session_dir + "/" + sub_cmd_log_fname)
 
-        output_subj_str = sess.split(datestring_match_splitter)[0].strip("_")
-        output_ymd_hms_str = datestring_match
-        output_nsp_str = sess.split(datestring_match_splitter)[1]
+	sub_cmd_file.write(" ".join(sub_cmd) + "\n")
 
-        if output_nsp_str[0] == "_":
-            output_nsp_str = output_nsp_str[1:]
+	sub_cmd_file.write("echo \"end process_split_channels\"\n")
 
-    if os.path.isdir(subj_path + "/" + sess) is True and sess != "_swarms":
+	sub_cmd_file.close()
 
-        print("looking at session " + sess + " ymd_hms --> " + output_ymd_hms_str)
+	return(sub_cmd_fpath)
 
-        # read the session info file, if there is one
-        session_info_glob = glob.glob(subj_path + "/" + sess + "/*_info.txt")
-        session_elementInfo_glob = glob.glob(subj_path + "/" + sess + "/*_elementInfo.txt")
 
-        if session_info_glob != [] and session_elementInfo_glob != []:
+def write_variance_and_lineNoise_exclusion(session_dir, session_nsx_fpath, session_analog_fpath, session_nev_fpath, session_jacksheet_fpath, job_name):
 
-            session_info_file = open(session_info_glob[0])
-            session_info = [l.strip("\n") for l in session_info_file]
-            session_info_file.close()
+	sub_cmd_fname = "variance_and_lineNoise_exclusion.sh"
+	sub_cmd_log_fname = "_variance_and_lineNoise_exclusion.log"
+	sub_cmd_fpath = session_dir + "/" + sub_cmd_fname
+	sub_cmd_file = open(sub_cmd_fpath, 'w')
 
-            analog_pulse_ext = session_info[0]
-            nsx_ext = session_info[1]
+	# write the sbatch header for sub_cmd bash file
+	sbatch_header = []
+	sbatch_header.append("#!/bin/bash")
+	sbatch_header.append("#SBATCH --mem=120g")
+	sbatch_header.append("#SBATCH --cpus-per-task=1")
+	sbatch_header.append("#SBATCH --error=" + session_dir + "/" + sub_cmd_log_fname)
+	sbatch_header.append("#SBATCH --output=" + session_dir + "/" + sub_cmd_log_fname)
+	sbatch_header.append("#SBATCH --gres=lscratch:15")
+	sbatch_header.append("#SBATCH --dependency=singleton")
+	sbatch_header.append("#SBATCH --job-name=" + job_name)
 
-            session_dir = subj_path + "/" + sess + "/lfp"
+	for l in sbatch_header:
+		sub_cmd_file.write(l + "\n")
 
-            if os.path.isdir(session_dir) is False:
-                os.mkdir(session_dir)
+	sub_cmd_file.write("\n\n")
 
-            # find the nsx file in this session
-            g = glob.glob(subj_path + "/" + sess + "/*." + nsx_ext)
+	sub_cmd_file.write("echo \"start variance_and_lineNoise_exclusion\"\n")
 
-            if g != []:
+	sub_cmd_file.write("tar -C /lscratch/$SLURM_JOB_ID -xf /usr/local/matlab-compiler/v94.tar.gz;")
 
-                print(session_dir)
+	matlab_command = "cd " + paths.variance_exclusion_matlab_dir + "/_variance_and_lineNoise_exclusion; ./run_variance_and_lineNoise_exclusion_swarm.sh " + paths.matlab_compiler_ver_str
 
-                job_name = "FRNU--" + timestamp + "--" + sess
+	sub_cmd = []
+	sub_cmd.append(matlab_command)
 
-                nsx_fpath = g[0]
-                nsx_fname = nsx_fpath.split("/")[-1]
+	sub_cmd.append("session_path")
+	sub_cmd.append(session_dir)
 
-                ns3_glob = glob.glob(subj_path + "/" + sess + "/*." + analog_pulse_ext)
-                nev_glob = glob.glob(subj_path + "/" + sess + "/*.nev")
+	sub_cmd.append("split_path")
+	sub_cmd.append(session_dir + "/lfp_splits")
 
-                big_bash_file.write("bash " + session_dir + "/" + bash_fname + "\n")
+	sub_cmd.append("nsx_physio_fpath")
+	sub_cmd.append(session_nsx_fpath)
 
-                time_log_fpath = session_dir + "/time.log"
-                sbatch_file = open(session_dir + "/" + bash_fname, 'w')
+	sub_cmd.append('jacksheet_fpath')
+	sub_cmd.append(session_jacksheet_fpath)
 
-                # write the sbatch header for combo bash file
-                sbatch_header = []
-                sbatch_header.append("#!/bin/bash")
+	if session_analog_fpath != []:
+		sub_cmd.append("analog_pulse_fpath")
+		sub_cmd.append(session_analog_fpath[0])  # ns3_fpath
 
-                # if os.path.getsize(nsx_fpath)/1e9 > 25:
-                #     sbatch_header.append("#SBATCH --mem=120g")
-                # else:
-                #     sbatch_header.append("#SBATCH --mem=120g")
-                sbatch_header.append("#SBATCH --mem=220g")
-                sbatch_header.append("#SBATCH --cpus-per-task=1")
-                sbatch_header.append("#SBATCH --error=" + session_dir + "/" + bash_log_fname)
-                sbatch_header.append("#SBATCH --output=" + session_dir + "/" + bash_log_fname)
-                sbatch_header.append("#SBATCH --time=10:00:00")
-                sbatch_header.append("#SBATCH --gres=lscratch:1")
+	if session_nev_fpath != []:
+		sub_cmd.append("nev_fpath")
+		sub_cmd.append(session_nev_fpath[0])  # nev_fpath
 
-                for l in sbatch_header:
-                    sbatch_file.write(l + "\n")
+	sub_cmd.append("&> " + session_dir + "/" + sub_cmd_log_fname)
 
-                sbatch_file.write("\n\n")
+	sub_cmd_file.write(" ".join(sub_cmd) + "\n")
 
-                # remove an existing _ignore_me.txt
-                sbatch_file.write("if [ -f " + session_dir + "/_ignore_me.txt ]; then\n")
-                sbatch_file.write("rm " + session_dir + "/_ignore_me.txt\n")
-                sbatch_file.write("fi\n\n")
+	sub_cmd_file.write("echo \"end variance_and_lineNoise_exclusion\"\n")
 
-                ###################################################################################################
-                ###################################################################################################
-                ###################################################################################################
+	sub_cmd_file.close()
 
-                #################################
-                #################################
-                # subcommand: splitLFP, write subcommand bash
-                #################################
+	return(sub_cmd_fpath)
 
-                sub_cmd_fname = "splitLFP.sh"
-                sub_cmd_log_fname = "_splitLFP.log"
-                sub_cmd_fpath = session_dir + "/" + sub_cmd_fname
-                sub_cmd_file = open(sub_cmd_fpath, 'w')
 
-                # write the sbatch header for sub_cmd bash file
-                sbatch_header = []
-                sbatch_header.append("#!/bin/bash")
-                sbatch_header.append("#SBATCH --mem=120g")
-                sbatch_header.append("#SBATCH --cpus-per-task=1")
-                sbatch_header.append("#SBATCH --error=" + session_dir + "/" + sub_cmd_log_fname)
-                sbatch_header.append("#SBATCH --output=" + session_dir + "/" + sub_cmd_log_fname)
-                sbatch_header.append("#SBATCH --gres=lscratch:1")
+def write_session_scripts(subj_path, sess, session_nsx_fpath, session_jacksheet_fpath, analog_pulse_ext, timestamp):
 
-                for l in sbatch_header:
-                    sub_cmd_file.write(l + "\n")
+	session_dir = subj_path + "/" + sess + "/lfp"
+	job_name = "FRNU--" + timestamp + "--" + sess
 
-                sub_cmd_file.write("\n\n")
+	bash_fname = "lfp_run_all.sh"
+	bash_log_fname = "_lfp_run_all.log"
 
-                sub_cmd_file.write("echo \"start splitLFP\"\n")
+	# get pulse filepaths
+	analog_pulse_glob = glob.glob(subj_path + "/" + sess + "/*." + analog_pulse_ext)
+	nev_glob = glob.glob(subj_path + "/" + sess + "/*.nev")
 
-                matlab_command = "cd " + splitLFP_matlab_dir + "/_splitLFP; ./run_splitLFP_swarm.sh " + matlab_compiler_ver_str
+	if os.path.isdir(session_dir) is False:
+		os.mkdir(session_dir)
 
-                sub_cmd = []
-                sub_cmd.append(matlab_command)
-                sub_cmd.append("nsx_fpath")
-                sub_cmd.append(nsx_fpath)
-                sub_cmd.append("save_dir")
-                sub_cmd.append(session_dir)
-                sub_cmd.append("&> " + session_dir + "/" + sub_cmd_log_fname)
+	for log_file in glob.glob(session_dir + "/*.log"):
+		print(" ... removing old log files", end="")
+		os.remove(log_file)
 
-                sub_cmd_file.write(" ".join(sub_cmd) + "\n")
+	time_log_fpath = session_dir + "/time.log"
+	lfp_sbatch_file = open(session_dir + "/" + bash_fname, 'w')
 
-                sub_cmd_file.write("echo \"end splitLFP\"\n")
+	# write the sbatch header for combo bash file
+	sbatch_header = []
+	sbatch_header.append("#!/bin/bash")
+	sbatch_header.append("#SBATCH --mem=220g")
+	sbatch_header.append("#SBATCH --cpus-per-task=1")
+	sbatch_header.append("#SBATCH --error=" + session_dir + "/" + bash_log_fname)
+	sbatch_header.append("#SBATCH --output=" + session_dir + "/" + bash_log_fname)
+	sbatch_header.append("#SBATCH --time=10:00:00")
+	sbatch_header.append("#SBATCH --gres=lscratch:15")
 
-                sub_cmd_file.close()
+	for l in sbatch_header:
+		lfp_sbatch_file.write(l + "\n")
 
-                #################################
-                #################################
-                # subcommand: splitLFP, include subcommand bash in combo bash
-                #################################
+	lfp_sbatch_file.write("\n\n")
 
-                sbatch_file.write("################################\n")
-                sbatch_file.write("# splitLFP\n")
-                sbatch_file.write("################################\n")
+	# remove an existing _ignore_me.txt
+	lfp_sbatch_file.write("if [ -f " + session_dir + "/_ignore_me.txt ]; then\n")
+	lfp_sbatch_file.write("rm " + session_dir + "/_ignore_me.txt\n")
+	lfp_sbatch_file.write("fi\n\n")
 
-                sbatch_file.write("start_time=$(date +%s)\n")
-                sbatch_file.write("echo -n \"" + sess + ":start_splitLFP:$start_time\" > " + time_log_fpath + "; ")
-                sbatch_file.write("date +%s >> " + time_log_fpath + "\n\n")
+	#################################
+	#################################
+	# subcommand: splitLFP
+	#################################
 
-                sbatch_file.write("bash " + sub_cmd_fpath + "\n\n")
+	sub_cmd_fpath = write_splitLFP(session_dir, session_nsx_fpath, session_jacksheet_fpath)
 
-                sbatch_file.write("done_time=$(date +%s)\n")
-                sbatch_file.write("echo \"" + sess + ":done_splitLFP:$done_time\" >> " + time_log_fpath + ";\n\n")
+	# add sub_cmd to combo_run file
+	lfp_sbatch_file.write("################################\n")
+	lfp_sbatch_file.write("# splitLFP\n")
+	lfp_sbatch_file.write("################################\n")
 
-                sbatch_file.write("if [ ! -f " + session_dir + "/_ignore_me.txt ]; then\n")
+	lfp_sbatch_file.write("start_time=$(date +%s)\n")
+	lfp_sbatch_file.write("echo -n \"" + sess + ":start_splitLFP:$start_time\" > " + time_log_fpath + "; ")
+	lfp_sbatch_file.write("date +%s >> " + time_log_fpath + "\n\n")
 
-                ###################################################################################################
-                ###################################################################################################
-                ###################################################################################################
+	lfp_sbatch_file.write("bash " + sub_cmd_fpath + "\n\n")
 
-                #################################
-                #################################
-                # subcommand: process_split_channels, write subcommand bash
-                #################################
+	lfp_sbatch_file.write("done_time=$(date +%s)\n")
+	lfp_sbatch_file.write("echo \"" + sess + ":done_splitLFP:$done_time\" >> " + time_log_fpath + ";\n\n")
 
-                sub_cmd_fname = "process_split_channels.sh"
-                sub_cmd_log_fname = "_process_split_channels.log"
-                sub_cmd_fpath = session_dir + "/" + sub_cmd_fname
-                sub_cmd_file = open(sub_cmd_fpath, 'w')
+	lfp_sbatch_file.write("if [ ! -f " + session_dir + "/_ignore_me.txt ]; then\n")
 
-                # write the sbatch header for sub_cmd bash file
-                sbatch_header = []
-                sbatch_header.append("#!/bin/bash")
-                sbatch_header.append("#SBATCH --mem=5g")
-                sbatch_header.append("#SBATCH --cpus-per-task=1")
-                sbatch_header.append("#SBATCH --error=" + session_dir + "/" + sub_cmd_log_fname)
-                sbatch_header.append("#SBATCH --output=" + session_dir + "/" + sub_cmd_log_fname)
-                sbatch_header.append("#SBATCH --gres=lscratch:1")
+	#################################
+	#################################
+	# subcommand: process_split_channels
+	#################################
 
-                for l in sbatch_header:
-                    sub_cmd_file.write(l + "\n")
+	sub_cmd_fpath = write_process_split_channels(session_dir, job_name)
 
-                sub_cmd_file.write("\n\n")
+	# add sub_cmd to combo_run file
+	lfp_sbatch_file.write("################################\n")
+	lfp_sbatch_file.write("# process_split_channels\n")
+	lfp_sbatch_file.write("################################\n")
 
-                sub_cmd_file.write("echo \"start process_split_channels\"\n")
+	lfp_sbatch_file.write("start_time=$(date +%s)\n")
+	lfp_sbatch_file.write("echo -n \"" + sess + ":start_process_split_channels:$start_time\" >> " + time_log_fpath + "; ")
+	lfp_sbatch_file.write("date +%s >> " + time_log_fpath + "\n\n")
 
-                sub_cmd = []
-                sub_cmd.append("python3")
-                sub_cmd.append(lfp_pipeline_dir + "/construct_lfp_split_swarm.py")
-                sub_cmd.append(session_dir + "/lfp_splits")
-                sub_cmd.append(job_name)
-                sub_cmd.append("&> " + session_dir + "/" + sub_cmd_log_fname)
+	lfp_sbatch_file.write("bash " + sub_cmd_fpath + "\n\n")
 
-                sub_cmd_file.write(" ".join(sub_cmd) + "\n")
+	lfp_sbatch_file.write("done_time=$(date +%s)\n")
+	lfp_sbatch_file.write("echo \"" + sess + ":done_process_split_channels:$done_time\" >> " + time_log_fpath + ";\n\n")
 
-                sub_cmd_file.write("echo \"end process_split_channels\"\n")
+	#################################
+	#################################
+	# subcommand: variance_and_lineNoise_exclusion
+	#################################
 
-                sub_cmd_file.close()
+	sub_cmd_fpath = write_variance_and_lineNoise_exclusion(session_dir, session_nsx_fpath, analog_pulse_glob, nev_glob, session_jacksheet_fpath, job_name)
 
-                #################################
-                #################################
-                # subcommand: process_split_channels, include subcommand bash in combo bash
-                #################################
+	# add sub_cmd to combo_run file
+	lfp_sbatch_file.write("################################\n")
+	lfp_sbatch_file.write("# variance_and_lineNoise_exclusion\n")
+	lfp_sbatch_file.write("################################\n")
 
-                sbatch_file.write("################################\n")
-                sbatch_file.write("# process_split_channels\n")
-                sbatch_file.write("################################\n")
+	lfp_sbatch_file.write("start_time=$(date +%s)\n")
+	lfp_sbatch_file.write("echo -n \"" + sess + ":start_variance_and_lineNoise_exclusion:$start_time\" >> " + time_log_fpath + "; ")
+	lfp_sbatch_file.write("date +%s >> " + time_log_fpath + "\n\n")
 
-                sbatch_file.write("start_time=$(date +%s)\n")
-                sbatch_file.write("echo -n \"" + sess + ":start_process_split_channels:$start_time\" >> " + time_log_fpath + "; ")
-                sbatch_file.write("date +%s >> " + time_log_fpath + "\n\n")
+	lfp_sbatch_file.write("sbatch " + sub_cmd_fpath + "\n\n")
 
-                sbatch_file.write("bash " + sub_cmd_fpath + "\n\n")
+	lfp_sbatch_file.write("done_time=$(date +%s)\n")
+	lfp_sbatch_file.write("echo \"" + sess + ":done_variance_and_lineNoise_exclusion:$done_time\" >> " + time_log_fpath + ";\n\n")
 
-                sbatch_file.write("done_time=$(date +%s)\n")
-                sbatch_file.write("echo \"" + sess + ":done_process_split_channels:$done_time\" >> " + time_log_fpath + ";\n\n")
+	lfp_sbatch_file.write("fi\n\n")
+	lfp_sbatch_file.close()
 
-                ###################################################################################################
-                ###################################################################################################
-                ###################################################################################################
+	return(session_dir + "/" + lfp_sbatch_file)
 
-                #################################
-                #################################
-                # subcommand: variance_and_lineNoise_exclusion, write subcommand bash
-                #################################
+#########################################################################
+# END FUNCTIONS #########################################################
+#########################################################################
 
-                sub_cmd_fname = "variance_and_lineNoise_exclusion.sh"
-                sub_cmd_log_fname = "_variance_and_lineNoise_exclusion.log"
-                sub_cmd_fpath = session_dir + "/" + sub_cmd_fname
-                sub_cmd_file = open(sub_cmd_fpath, 'w')
 
-                # write the sbatch header for sub_cmd bash file
-                sbatch_header = []
-                sbatch_header.append("#!/bin/bash")
-                sbatch_header.append("#SBATCH --mem=120g")
-                sbatch_header.append("#SBATCH --cpus-per-task=1")
-                sbatch_header.append("#SBATCH --error=" + session_dir + "/" + sub_cmd_log_fname)
-                sbatch_header.append("#SBATCH --output=" + session_dir + "/" + sub_cmd_log_fname)
-                sbatch_header.append("#SBATCH --gres=lscratch:5")
-                sbatch_header.append("#SBATCH --dependency=singleton")
-                sbatch_header.append("#SBATCH --job-name=" + job_name)
+if __name__ == "__main__":
 
-                for l in sbatch_header:
-                    sub_cmd_file.write(l + "\n")
+	parser = argparse.ArgumentParser(description='create bash files for spike sorting and lfp extraction')
 
-                sub_cmd_file.write("\n\n")
+	parser.add_argument('subj_path')
 
-                sub_cmd_file.write("echo \"start variance_and_lineNoise_exclusion\"\n")
+	args = parser.parse_args()
 
-                matlab_command = "cd " + variance_exclusion_matlab_dir + "/_variance_and_lineNoise_exclusion; ./run_variance_and_lineNoise_exclusion_swarm.sh " + matlab_compiler_ver_str
+	subj_path = args.subj_path
 
-                sub_cmd = []
-                sub_cmd.append(matlab_command)
+	timestamp = time.strftime("%d_%m_%Y--%H_%M_%S")
 
-                sub_cmd.append("subj_str")
-                sub_cmd.append(output_subj_str)
+	subj_path_files = os.listdir(subj_path)
+	subj_path_files.sort()
 
-                sub_cmd.append("time_str")
-                sub_cmd.append(output_ymd_hms_str)
+	lfp_big_bash_list = []
 
-                sub_cmd.append("nsp_str")
-                sub_cmd.append(output_nsp_str)
+	for sess in subj_path_files:
 
-                sub_cmd.append("split_path")
-                sub_cmd.append(session_dir + "/lfp_splits")
+		print("")
+		print("looking at session " + sess, end="")
 
-                sub_cmd.append("nsx_physio_fpath")
-                sub_cmd.append(nsx_fpath)
+		if os.path.isdir(subj_path + "/" + sess) is True:
 
-                sub_cmd.append('elementInfo_fpath')
-                sub_cmd.append(session_elementInfo_glob[0])
+			print(" ... is a directory", end="")
 
-                if ns3_glob != []:
-                    sub_cmd.append("ns3_pulse_fpath")
-                    sub_cmd.append(ns3_glob[0])  # ns3_fpath
+			# read the session info file, if there is one
+			session_jacksheet_glob = glob.glob(subj_path + "/" + sess + "/jacksheetBR_complete.csv")
+			session_info_glob = glob.glob(subj_path + "/" + sess + "/*_info.txt")
 
-                if nev_glob != []:
-                    sub_cmd.append("nev_fpath")
-                    sub_cmd.append(nev_glob[0])  # nev_fpath
+			if session_info_glob != [] and session_jacksheet_glob != []:
 
-                sub_cmd.append("&> " + session_dir + "/" + sub_cmd_log_fname)
+				print(" ... has jacksheet + info", end="")
 
-                sub_cmd_file.write(" ".join(sub_cmd) + "\n")
+				session_info_fpath = session_info_glob[0]
+				sesion_jacksheet_fpath = session_jacksheet_glob[0]
 
-                sub_cmd_file.write("echo \"end variance_and_lineNoise_exclusion\"\n")
+				# open the info.txt for this session
+				session_info_file = open(session_info_fpath)
+				session_info = [l.strip("\n") for l in session_info_file]
+				session_info_file.close()
 
-                sub_cmd_file.close()
+				analog_pulse_ext = session_info[0]
+				nsx_ext = session_info[1]
+				nsp_suffix = session_info[2]
 
-                #################################
-                #################################
-                # subcommand: variance_and_lineNoise_exclusion, include subcommand bash in combo bash
-                #################################
+				session_nsx_glob = glob.glob(subj_path + "/" + sess + "/*." + nsx_ext)
 
-                sbatch_file.write("################################\n")
-                sbatch_file.write("# variance_and_lineNoise_exclusion\n")
-                sbatch_file.write("################################\n")
+				# there is a nsx file, a jacksheet, and an info file. good to go
+				if session_nsx_glob != []:
 
-                sbatch_file.write("start_time=$(date +%s)\n")
-                sbatch_file.write("echo -n \"" + sess + ":start_variance_and_lineNoise_exclusion:$start_time\" >> " + time_log_fpath + "; ")
-                sbatch_file.write("date +%s >> " + time_log_fpath + "\n\n")
+					print(" ... has an nsx file! zoom!", end="")
 
-                sbatch_file.write("sbatch " + sub_cmd_fpath + "\n\n")
+					session_nsx_fpath = session_nsx_glob[0]
 
-                sbatch_file.write("done_time=$(date +%s)\n")
-                sbatch_file.write("echo \"" + sess + ":done_variance_and_lineNoise_exclusion:$done_time\" >> " + time_log_fpath + ";\n\n")
+					session_bash = write_session_scripts(subj_path, sess, session_nsx_fpath, sesion_jacksheet_fpath, analog_pulse_ext, timestamp)
+					lfp_big_bash_list.append(session_bash)
 
-                ###################################################################################################
-                ###################################################################################################
-                ###################################################################################################
+	# make subj_path/run_files if it doesnt exist, bash scripts go in there
+	swarm_files_path = subj_path + "/_swarms"
 
-                sbatch_file.write("fi\n\n")
-                sbatch_file.close()
+	if os.path.isdir(swarm_files_path) is False:
+		os.mkdir(swarm_files_path)
+		os.mkdir(swarm_files_path + "/log_dump")
 
-big_bash_file.close()
+	big_bash_fname = "lfp_initial_big_bash.sh"
+	swarm_fname = "lfp_initial_swarm.sh"
+
+	target_num_bundle_groups = 15
+
+	swarm_command = "swarm -g 200 -b %s -t 1 --time 2:00:00 --gres=lscratch:1 --merge-output --logdir "
+	swarm_command += swarm_files_path + "/log_dump"
+	swarm_command += " -f "
+
+	bundle_size = math.ceil(len(lfp_big_bash_list) / target_num_bundle_groups)
+	swarm_command = swarm_command % str(bundle_size)
+
+	# write sort swarm file
+	swarm_file = open(swarm_files_path + "/" + swarm_fname, 'w')
+	swarm_file.write(swarm_command + " " + swarm_files_path + "/" + big_bash_fname)
+	swarm_file.close()
+
+	# write sort sort big bash file
+	big_bash_file = open(swarm_files_path + "/" + big_bash_fname, 'w')
+	for f in lfp_big_bash_list:
+		big_bash_file.write(f + "\n")
+	big_bash_file.close()
