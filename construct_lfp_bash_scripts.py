@@ -279,7 +279,7 @@ def write_session_scripts(subj_path, sess, nsp_suffix, session_nsx_fpath, sessio
 	lfp_sbatch_file.write("fi\n\n")
 	lfp_sbatch_file.close()
 
-	return(session_dir + "/" + lfp_sbatch_file)
+	return(session_dir + "/" + bash_fname)
 
 #########################################################################
 # END FUNCTIONS #########################################################
