@@ -371,5 +371,5 @@ if __name__ == "__main__":
 	# write sort sort big bash file
 	big_bash_file = open(swarm_files_path + "/" + big_bash_fname, 'w')
 	for f in lfp_big_bash_list:
-		big_bash_file.write(f + "\n")
+		big_bash_file.write("bash " + f + "\n")
 	big_bash_file.close()
