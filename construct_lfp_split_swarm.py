@@ -23,7 +23,7 @@ if len(sys.argv) < 3:
 split_path = sys.argv[1]
 job_name = sys.argv[2]
 
-swarm_command = "swarm -g 20 -b 10 -t 1 --partition norm --time 2:00:00 -J " + job_name + " --gres=lscratch:1 --merge-output --logdir "
+swarm_command = "swarm -g 20 -b 10 -t 1 --partition norm --time 2:00:00 -J " + job_name + " --gres=lscratch:15 --merge-output --logdir "
 
 filt_chan_substr = "filt"
 bash_file = "split_big_bash.sh"
@@ -58,6 +58,7 @@ split_path_files = os.listdir(split_path)
 for iFile in split_path_files:
     # ignore old resulting filtered files
     if filt_chan_substr not in iFile:
+        bash_file.write("tar -C /lscratch/$SLURM_JOB_ID -xf /usr/local/matlab-compiler/v94.tar.gz;\n")
         bash_file.write(matlab_command + " channel_fpath " + split_path + "/" + iFile + " \n")
 
 # close big bash file
