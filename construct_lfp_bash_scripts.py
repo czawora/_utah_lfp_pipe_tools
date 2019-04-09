@@ -25,7 +25,7 @@ import paths
 #########################################################################
 
 
-def write_splitLFP(session_dir, nsx_fpath):
+def write_splitLFP(session_dir, nsp_suffix, nsx_fpath, session_jacksheet_fpath):
 
 	sub_cmd_fname = "splitLFP.sh"
 	sub_cmd_log_fname = "_splitLFP.log"
@@ -56,6 +56,10 @@ def write_splitLFP(session_dir, nsx_fpath):
 	sub_cmd.append(matlab_command)
 	sub_cmd.append("nsx_fpath")
 	sub_cmd.append(nsx_fpath)
+	sub_cmd.append("jacksheet_fpath")
+	sub_cmd.append(session_jacksheet_fpath)
+	sub_cmd.append("nsp_suffix")
+	sub_cmd.append(nsp_suffix)
 	sub_cmd.append("save_dir")
 	sub_cmd.append(session_dir)
 	sub_cmd.append("&> " + session_dir + "/" + sub_cmd_log_fname)
@@ -108,7 +112,7 @@ def write_process_split_channels(session_dir, job_name):
 	return(sub_cmd_fpath)
 
 
-def write_variance_and_lineNoise_exclusion(session_dir, session_nsx_fpath, session_analog_fpath, session_nev_fpath, session_jacksheet_fpath, job_name):
+def write_variance_and_lineNoise_exclusion(session_dir, session_analog_fpath, session_nev_fpath, session_jacksheet_fpath, job_name):
 
 	sub_cmd_fname = "variance_and_lineNoise_exclusion.sh"
 	sub_cmd_log_fname = "_variance_and_lineNoise_exclusion.log"
@@ -143,12 +147,6 @@ def write_variance_and_lineNoise_exclusion(session_dir, session_nsx_fpath, sessi
 	sub_cmd.append("session_path")
 	sub_cmd.append(session_dir)
 
-	sub_cmd.append("split_path")
-	sub_cmd.append(session_dir + "/lfp_splits")
-
-	sub_cmd.append("nsx_physio_fpath")
-	sub_cmd.append(session_nsx_fpath)
-
 	sub_cmd.append('jacksheet_fpath')
 	sub_cmd.append(session_jacksheet_fpath)
 
@@ -171,7 +169,7 @@ def write_variance_and_lineNoise_exclusion(session_dir, session_nsx_fpath, sessi
 	return(sub_cmd_fpath)
 
 
-def write_session_scripts(subj_path, sess, session_nsx_fpath, session_jacksheet_fpath, analog_pulse_ext, timestamp):
+def write_session_scripts(subj_path, sess, nsp_suffix, session_nsx_fpath, session_jacksheet_fpath, analog_pulse_ext, timestamp):
 
 	session_dir = subj_path + "/" + sess + "/lfp"
 	job_name = "FRNU--" + timestamp + "--" + sess
@@ -218,7 +216,7 @@ def write_session_scripts(subj_path, sess, session_nsx_fpath, session_jacksheet_
 	# subcommand: splitLFP
 	#################################
 
-	sub_cmd_fpath = write_splitLFP(session_dir, session_nsx_fpath, session_jacksheet_fpath)
+	sub_cmd_fpath = write_splitLFP(session_dir, nsp_suffix, session_nsx_fpath, session_jacksheet_fpath)
 
 	# add sub_cmd to combo_run file
 	lfp_sbatch_file.write("################################\n")
@@ -262,7 +260,7 @@ def write_session_scripts(subj_path, sess, session_nsx_fpath, session_jacksheet_
 	# subcommand: variance_and_lineNoise_exclusion
 	#################################
 
-	sub_cmd_fpath = write_variance_and_lineNoise_exclusion(session_dir, session_nsx_fpath, analog_pulse_glob, nev_glob, session_jacksheet_fpath, job_name)
+	sub_cmd_fpath = write_variance_and_lineNoise_exclusion(session_dir, analog_pulse_glob, nev_glob, session_jacksheet_fpath, job_name)
 
 	# add sub_cmd to combo_run file
 	lfp_sbatch_file.write("################################\n")
@@ -343,7 +341,7 @@ if __name__ == "__main__":
 
 					session_nsx_fpath = session_nsx_glob[0]
 
-					session_bash = write_session_scripts(subj_path, sess, session_nsx_fpath, sesion_jacksheet_fpath, analog_pulse_ext, timestamp)
+					session_bash = write_session_scripts(subj_path, sess, nsp_suffix, session_nsx_fpath, sesion_jacksheet_fpath, analog_pulse_ext, timestamp)
 					lfp_big_bash_list.append(session_bash)
 
 	# make subj_path/run_files if it doesnt exist, bash scripts go in there
