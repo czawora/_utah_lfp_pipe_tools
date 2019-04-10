@@ -188,7 +188,7 @@ def write_session_scripts(subj_path, sess, nsp_suffix, session_nsx_fpath, sessio
 	if log_glob != []:
 		print(" ... removing old log files", end="")
 		for log_file in log_glob:
-			os.remove(log_file)
+			os.rename(log_file, log_file + ".old")
 
 	time_log_fpath = session_dir + "/time.log"
 	lfp_sbatch_file = open(session_dir + "/" + bash_fname, 'w')
