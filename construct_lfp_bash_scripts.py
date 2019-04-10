@@ -330,8 +330,8 @@ if __name__ == "__main__":
 				session_info = [l.strip("\n") for l in session_info_file]
 				session_info_file.close()
 
-				analog_pulse_ext = session_info[0]
-				nsx_ext = session_info[1]
+				nsx_ext = session_info[0]
+				analog_pulse_ext = session_info[1]
 				nsp_suffix = session_info[2]
 
 				session_nsx_glob = glob.glob(subj_path + "/" + sess + "/*." + nsx_ext)
