@@ -62,7 +62,7 @@ for globObj in glob.glob(subj_dir + "/*/lfp/outputs/*processed.mat"):
 
 			output_processed_dict[session] += 1
 
-for globObj in glob.glob(subj_dir + "/*/lfp/outputs/refset*"):
+for globObj in glob.glob(subj_dir + "/*/lfp/outputs/microDev*"):
 
 	for session in all_session_names:
 
@@ -118,7 +118,7 @@ for session in output_variance_dict.keys():
 		if output_refset_dict[session] == 0:
 
 			missing_piece = 1
-			refset_strings.append(session + " -- has 0 refset folders")
+			refset_strings.append(session + " -- has 0 microDev folders")
 
 		if missing_piece == 0:
 
