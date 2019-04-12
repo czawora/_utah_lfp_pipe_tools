@@ -176,7 +176,7 @@ print("** sessions with some outputs missing: " + str(missing_outputs))
 print("** sessions with all outputs present: " + str(all_outputs))
 # print("** sessions with no outputs directory: " + str(len(nonstarter_sessions)))
 
-if rerun is True:
+if rerun is True and len(incomplete_sessions) > 0:
 
 	rewrite_big_bash_fpath = subj_dir + "/_swarms/lfp_rerun_big_bash.sh"
 	rewrite_swarm_fpath = subj_dir + "/_swarms/lfp_rerun_swarm.sh"
