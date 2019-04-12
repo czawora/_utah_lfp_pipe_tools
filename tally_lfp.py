@@ -1,14 +1,18 @@
 import sys
 import glob
 import os
+import argparse
+import math
 
-# expected_output_num = 4
+parser = argparse.ArgumentParser()
 
-if len(sys.argv) < 2:
-	print("first argument should be the subject directory")
-	exit(1)
+parser.add_argument('subj_path')
+parser.add_argument('--rerun', action='store_true')
 
-subj_dir = sys.argv[1]
+args = parser.parse_args()
+
+subj_dir = args.subj_path
+rerun = args.rerun
 
 if os.path.isdir(subj_dir) is False:
 	print(subj_dir + "is not a valid directory")
@@ -171,3 +175,31 @@ print("** sessions with lfp/outputs directories (should equal all_sessions - ign
 print("** sessions with some outputs missing: " + str(missing_outputs))
 print("** sessions with all outputs present: " + str(all_outputs))
 # print("** sessions with no outputs directory: " + str(len(nonstarter_sessions)))
+
+if rerun is True:
+
+	rewrite_big_bash_fpath = subj_dir + "/_swarms/lfp_rerun_big_bash.sh"
+	rewrite_swarm_fpath = subj_dir + "/_swarms/lfp_rerun_swarm.sh"
+
+	print("writing rerun scripts to:")
+	print(rewrite_big_bash_fpath + " + " + rewrite_swarm_fpath)
+
+	target_num_bundle_groups = 15
+
+	swarm_command = "swarm -g 200 -b %s -t 1 --time 2:00:00 --gres=lscratch:15 --merge-output --logdir "
+	swarm_command += subj_dir + "/_swarms" + "/log_dump"
+	swarm_command += " -f "
+
+	bundle_size = math.ceil(len(incomplete_sessions) / target_num_bundle_groups)
+	swarm_command = swarm_command % str(bundle_size)
+
+	# write sort swarm file
+	swarm_file = open(rewrite_swarm_fpath, 'w')
+	swarm_file.write(swarm_command + " " + rewrite_big_bash_fpath)
+	swarm_file.close()
+
+	# write sort sort big bash file
+	big_bash_file = open(rewrite_big_bash_fpath, 'w')
+	for f in incomplete_sessions:
+		big_bash_file.write("bash " + f + "/lfp/lfp_run_all.sh" + "\n")
+	big_bash_file.close()
