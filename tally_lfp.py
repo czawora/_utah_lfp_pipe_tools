@@ -181,7 +181,7 @@ if rerun is True and len(incomplete_sessions) > 0:
 	rewrite_big_bash_fpath = subj_dir + "/_swarms/lfp_rerun_big_bash.sh"
 	rewrite_swarm_fpath = subj_dir + "/_swarms/lfp_rerun_swarm.sh"
 
-	print("writing rerun scripts to:")
+	print("\nwriting rerun scripts to:")
 	print(rewrite_big_bash_fpath + " + " + rewrite_swarm_fpath)
 
 	target_num_bundle_groups = 15

@@ -137,6 +137,10 @@ def write_variance_and_lineNoise_exclusion(session_dir, session_analog_fpath, se
 
 	sub_cmd_file.write("echo \"start variance_and_lineNoise_exclusion\"\n")
 
+	sub_cmd_file.write("if [ -d " + session_dir + "/outputs ]; then\n")
+	sub_cmd_file.write("rm -rf " + session_dir + "/outputs\n")
+	sub_cmd_file.write("fi\n")
+
 	sub_cmd_file.write("tar -C /lscratch/$SLURM_JOB_ID -xf /usr/local/matlab-compiler/v94.tar.gz;")
 
 	matlab_command = "cd " + paths.variance_exclusion_matlab_dir + "/_variance_and_lineNoise_exclusion; ./run_variance_and_lineNoise_exclusion_swarm.sh " + paths.matlab_compiler_ver_str
