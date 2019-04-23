@@ -176,30 +176,32 @@ print("** sessions with some outputs missing: " + str(missing_outputs))
 print("** sessions with all outputs present: " + str(all_outputs))
 # print("** sessions with no outputs directory: " + str(len(nonstarter_sessions)))
 
-if rerun is True and len(incomplete_sessions) > 0:
+if len(incomplete_sessions) > 0:
 
-	rewrite_big_bash_fpath = subj_dir + "/_swarms/lfp_rerun_big_bash.sh"
-	rewrite_swarm_fpath = subj_dir + "/_swarms/lfp_rerun_swarm.sh"
+	if rerun is True:
 
-	print("\nwriting rerun scripts to:")
-	print(rewrite_big_bash_fpath + " + " + rewrite_swarm_fpath)
+		rewrite_big_bash_fpath = subj_dir + "/_swarms/lfp_rerun_big_bash.sh"
+		rewrite_swarm_fpath = subj_dir + "/_swarms/lfp_rerun_swarm.sh"
 
-	target_num_bundle_groups = 15
+		print("\nwriting rerun scripts to:")
+		print(rewrite_big_bash_fpath + " + " + rewrite_swarm_fpath)
 
-	swarm_command = "swarm -g 200 -b %s -t 1 --time 2:00:00 --gres=lscratch:15 --merge-output --logdir "
-	swarm_command += subj_dir + "/_swarms" + "/log_dump"
-	swarm_command += " -f "
+		target_num_bundle_groups = 15
 
-	bundle_size = math.ceil(len(incomplete_sessions) / target_num_bundle_groups)
-	swarm_command = swarm_command % str(bundle_size)
+		swarm_command = "swarm -g 200 -b %s -t 1 --time 2:00:00 --gres=lscratch:15 --merge-output --logdir "
+		swarm_command += subj_dir + "/_swarms" + "/log_dump"
+		swarm_command += " -f "
 
-	# write sort swarm file
-	swarm_file = open(rewrite_swarm_fpath, 'w')
-	swarm_file.write(swarm_command + " " + rewrite_big_bash_fpath)
-	swarm_file.close()
+		bundle_size = math.ceil(len(incomplete_sessions) / target_num_bundle_groups)
+		swarm_command = swarm_command % str(bundle_size)
 
-	# write sort sort big bash file
-	big_bash_file = open(rewrite_big_bash_fpath, 'w')
-	for f in incomplete_sessions:
-		big_bash_file.write("bash " + f + "/lfp/lfp_run_all.sh" + "\n")
-	big_bash_file.close()
+		# write sort swarm file
+		swarm_file = open(rewrite_swarm_fpath, 'w')
+		swarm_file.write(swarm_command + " " + rewrite_big_bash_fpath)
+		swarm_file.close()
+
+		# write sort sort big bash file
+		big_bash_file = open(rewrite_big_bash_fpath, 'w')
+		for f in incomplete_sessions:
+			big_bash_file.write("bash " + f + "/lfp/lfp_run_all.sh" + "\n")
+		big_bash_file.close()
