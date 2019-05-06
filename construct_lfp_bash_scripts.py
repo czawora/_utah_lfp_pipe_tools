@@ -362,7 +362,7 @@ if __name__ == "__main__":
 
 	target_num_bundle_groups = 15
 
-	swarm_command = "swarm -g 60 -b %s -t 1 --time 2:00:00 --gres=lscratch:15 --merge-output --logdir "
+	swarm_command = "swarm -g 100 -b %s -t 1 --time 2:00:00 --gres=lscratch:15 --merge-output --logdir "
 	swarm_command += swarm_files_path + "/log_dump"
 	swarm_command += " -f "
 
