@@ -23,7 +23,7 @@ if len(sys.argv) < 3:
 split_path = sys.argv[1]
 job_name = sys.argv[2]
 
-swarm_command = "swarm -g 15 -b 10 -t 1 --partition norm --time 2:00:00 -J " + job_name + " --gres=lscratch:15 --merge-output --logdir "
+swarm_command = "swarm -g 20 -b 10 -t 1 --partition norm --time 2:00:00 -J " + job_name + " --gres=lscratch:15 --merge-output --logdir "
 
 filt_chan_substr = "filt"
 bash_file = "split_big_bash.sh"
