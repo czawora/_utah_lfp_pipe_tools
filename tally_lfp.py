@@ -174,6 +174,7 @@ print()
 print("** sessions with lfp/outputs directories (should equal all_sessions - ignore_sessions): " + str(missing_outputs + all_outputs))
 print("** sessions with some outputs missing: " + str(missing_outputs))
 print("** sessions with all outputs present: " + str(all_outputs))
+print("** all outputs present = nonreref.mat, processed.mat, variance.csv, and > 1 microDev folder")
 # print("** sessions with no outputs directory: " + str(len(nonstarter_sessions)))
 
 if len(incomplete_sessions) > 0:
@@ -205,3 +206,5 @@ if len(incomplete_sessions) > 0:
 		for f in incomplete_sessions:
 			big_bash_file.write("bash " + f + "/lfp/lfp_run_all.sh" + "\n")
 		big_bash_file.close()
+
+		print("new swarm file written for incomplete sessions: " + rewrite_swarm_fpath)

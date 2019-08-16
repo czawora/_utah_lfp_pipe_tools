@@ -16,6 +16,7 @@ sys.path.append(dname)
 
 if os.path.isfile(dname + "/paths.py") is False:
 	print("move a copy of paths.py into this folder: " + dname)
+	print("make sure its contents are correct.")
 	exit(2)
 
 import paths
@@ -294,7 +295,7 @@ def write_session_scripts(subj_path, sess, nsp_suffix, session_nsx_fpath, sessio
 
 if __name__ == "__main__":
 
-	parser = argparse.ArgumentParser(description='create bash files for spike sorting and lfp extraction')
+	parser = argparse.ArgumentParser(description='create bash files for lfp extraction')
 
 	parser.add_argument('subj_path')
 
@@ -350,7 +351,7 @@ if __name__ == "__main__":
 					session_bash = write_session_scripts(subj_path, sess, nsp_suffix, session_nsx_fpath, sesion_jacksheet_fpath, analog_pulse_ext, timestamp)
 					lfp_big_bash_list.append(session_bash)
 
-	# make subj_path/run_files if it doesnt exist, bash scripts go in there
+	# make subj_path/_swarms if it doesnt exist, bash scripts go in there
 	swarm_files_path = subj_path + "/_swarms"
 
 	if os.path.isdir(swarm_files_path) is False:
